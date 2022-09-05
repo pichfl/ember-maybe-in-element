@@ -6,15 +6,31 @@ module.exports = {
   name: require('./package').name,
 
   setupPreprocessorRegistry(type, registry) {
+    if (type !== 'parent') {
+      return;
+    }
+
     let checker = new VersionChecker(this.project);
     let dep = checker.for('ember-source');
-    let maybePlugin = {
+    let version = dep.gte("3.17.0");
+    let plugin = this._buildPlugin({ version });
+
+    plugin.parallelBabel = {
+      requireFile: __filename,
+      buildUsing: '_buildPlugin',
+      params: {},
+    };
+
+    registry.add('htmlbars-ast-plugin', plugin);
+  },
+
+  _buildPlugin(options) {
+    return {
       name: 'ember-maybe-in-element-transform',
-      plugin: buildAstTransform(dep.gte('3.17.0')),
+      plugin: buildAstTransform(options.version),
       baseDir() {
         return __dirname;
       },
     };
-    registry.add('htmlbars-ast-plugin', maybePlugin);
   },
 };
